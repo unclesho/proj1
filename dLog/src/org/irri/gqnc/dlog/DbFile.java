@@ -2,7 +2,6 @@ package org.irri.gqnc.dlog;
 
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.widget.Toast;
 
 public class DbFile extends Object {
 	// Define some constants here..

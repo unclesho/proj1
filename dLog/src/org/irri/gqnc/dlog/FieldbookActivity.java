@@ -7,9 +7,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.codec.digest.DigestUtils;
-
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.Environment;
@@ -274,7 +271,7 @@ public class FieldbookActivity extends SherlockActivity {
 						CheckBox checkbox = (CheckBox) v.findViewById(R.id.checkBoxFieldbook);
 						ModelBean element = (ModelBean) viewHolder.checkBoxFieldbookName.getTag();
 						element.setSelected(checkbox.isChecked());
-						Toast.makeText(getApplicationContext(), String.valueOf(element.intOnCount) + "-checkbox-" + element.getFieldBookName(), Toast.LENGTH_SHORT).show();
+						Toast.makeText(getApplicationContext(), String.valueOf(ModelBean.intOnCount) + "-checkbox-" + element.getFieldBookName(), Toast.LENGTH_SHORT).show();
 					}
 				});
 
