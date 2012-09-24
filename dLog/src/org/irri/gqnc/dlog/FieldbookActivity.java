@@ -111,6 +111,7 @@ public class FieldbookActivity extends SherlockActivity {
 		});
 
 //		Log.d(TAG, "*****onCreate*****");
+		
 	}
 
 
