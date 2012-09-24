@@ -7,6 +7,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.codec.digest.DigestUtils;
+
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.Environment;
@@ -30,7 +33,7 @@ import com.actionbarsherlock.view.MenuItem;
 
 public class FieldbookActivity extends SherlockActivity {
 	public static int THEME = R.style.Theme_Sherlock;
-	private static final String TAG = StudyActivity.class.getSimpleName();
+	private static final String TAG = FieldbookActivity.class.getSimpleName();
 	static final String MOUNT_SD_CARD = Environment.getExternalStorageDirectory().getPath();
 	static final String mntPath = "/dLog1009/studies";
 
