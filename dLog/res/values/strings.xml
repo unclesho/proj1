@@ -1,0 +1,8 @@
+<resources>
+
+    <string name="titleApplication">dLog</string>
+    <string name="titleStudyActvity">Study</string>
+    <string name="noData">No Data</string>
+    <string name="titleFieldBookActivity">Fieldbook</string>
+
+</resources>

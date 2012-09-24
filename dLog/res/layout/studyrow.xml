@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".StudyActivity" >
+
+    <TextView
+        android:id="@+id/textViewStudyDate"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|right"
+        android:gravity="right"
+        android:text="3 days ago"
+        android:textSize="15dp" >
+    </TextView>
+
+    <TextView
+        android:id="@+id/textViewStudyName"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|left"
+        android:text="Study name"
+        android:textSize="30dp" />
+    
+     <TextView
+        android:id="@+id/textViewStudyVersion"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="3 days ago"
+        android:textSize="15dp" >
+    </TextView>
+
+</LinearLayout>

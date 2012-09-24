@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/Activity"
+    android:textColor="#FFFFFF" >
+
+    <!-- This takes care of the customized ListActivity. It is important that the id is "@android:id/list" -->
+
+    <ListView
+        android:id="@+id/listViewStudies"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent" />
+
+</LinearLayout>
