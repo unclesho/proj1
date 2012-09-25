@@ -13,7 +13,6 @@ import org.apache.commons.codec.digest.DigestUtils;
 import android.app.Activity;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Debug;
 import android.os.Environment;
 import android.text.format.DateUtils;
 import android.view.LayoutInflater;
@@ -34,36 +33,30 @@ import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
 
 public class FieldbookActivity extends SherlockActivity {
-	public static int THEME = R.style.Theme_Sherlock;
-	private static final String TAG = FieldbookActivity.class.getSimpleName();
+	public static int THEME = R.style.Theme_Sherlock;	// Don't delete!
+    ActionMode mMode;	// for the contextual ActionMode
+	Boolean isDisplayedActionMode;	// signals that the ActionMode is up already
+
 	static final String MOUNT_SD_CARD = Environment.getExternalStorageDirectory().getPath();
 	static final String mntPath = "/dLog1009/studies";
 
-	// Define the controls used in this activity
+	// Define the controls and configures the ModelBean for the ListView adapter
 	ListView listViewStudies;
-
-	// This portion configures the ModelBean for the new ListView adapter
-	List<ModelBean> model;	//Define a list of ModelBeans
+	List<ModelBean> model;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-//		Debug.startMethodTracing("Fieldbook.trace");	
 		
 		setContentView(R.layout.study);	
 		listViewStudies = (ListView) findViewById(R.id.listViewStudies);
-
-		// Prepare the ArrayAdapter here
+		// Prepare the ArrayAdapter in a non-UI thread
 		new PrepareArrayAdapter().execute(MOUNT_SD_CARD + mntPath);
-	} //oncreate
+		
+		isDisplayedActionMode = false;	// ActionMode initially off -- of course.
+	} //onCreate
 
-	@Override
-	protected void onStop() {
-		super.onStop();
-//		Debug.stopMethodTracing();
-	}
-
-	@Override
+/*	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
         menu.add("New")
             .setIcon(R.drawable.content_new)
@@ -80,7 +73,7 @@ public class FieldbookActivity extends SherlockActivity {
 	public boolean onMenuItemSelected(int featureId, MenuItem item) {
 		Toast.makeText(getApplicationContext(), item.getTitle(), Toast.LENGTH_SHORT).show();
 		return true;
-	}
+	}*/
 
 	/**
 	 *  This will prepare the array adapter in the background and then associate it to the ListView.
@@ -161,7 +154,7 @@ public class FieldbookActivity extends SherlockActivity {
 					
 					ModelBean element = (ModelBean) checkbox.getTag();
 //					Toast.makeText(FieldbookActivity.this.getApplicationContext(), element.getFieldBookName() + "-voila!", Toast.LENGTH_SHORT).show();
-					// TODO: Create the logic here to open the file when it is clicked directly..
+					// TODO: Create the logic here to open the sqlite file when it is clicked directly..
 				}
 			});
 			
@@ -170,37 +163,16 @@ public class FieldbookActivity extends SherlockActivity {
 		}		
 	} // end of the asynchronous task
 	
-	
-	private final class AnActionModeOfEpicProportions implements ActionMode.Callback {
+	private final class FieldbookActivityActionMode implements ActionMode.Callback {
         @Override
         public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-            //Used to put dark icons on light action bar
-//            boolean isLight = SampleList.THEME == R.style.Theme_Sherlock_Light;
+            menu.add("Archive")
+                .setIcon(R.drawable.device_access_sd_storage)
+                .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM | MenuItem.SHOW_AS_ACTION_WITH_TEXT);
 
-//            menu.add("Save")
-//                .setIcon(isLight ? R.drawable.ic_compose_inverse : R.drawable.ic_compose)
-//                .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
-//
-//            menu.add("Search")
-//                .setIcon(isLight ? R.drawable.ic_search_inverse : R.drawable.ic_search)
-//                .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
-//
-//            menu.add("Refresh")
-//                .setIcon(isLight ? R.drawable.ic_refresh_inverse : R.drawable.ic_refresh)
-//                .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
-//
-//            menu.add("Save")
-//                .setIcon(isLight ? R.drawable.ic_compose_inverse : R.drawable.ic_compose)
-//                .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
-//
-//            menu.add("Search")
-//                .setIcon(isLight ? R.drawable.ic_search_inverse : R.drawable.ic_search)
-//                .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
-//
-//            menu.add("Refresh")
-//                .setIcon(isLight ? R.drawable.ic_refresh_inverse : R.drawable.ic_refresh)
-//                .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
-
+            menu.add("Share")
+                .setIcon(R.drawable.social_share)
+                .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM | MenuItem.SHOW_AS_ACTION_WITH_TEXT);
             return true;
         }
 
@@ -219,7 +191,7 @@ public class FieldbookActivity extends SherlockActivity {
         @Override
         public void onDestroyActionMode(ActionMode mode) {
         }
-    }
+    } // FieldbookActivityActionMode
 
 	// Use this private class to hold state values for each checkbox
 	private final static class ModelBean {
@@ -313,8 +285,19 @@ public class FieldbookActivity extends SherlockActivity {
 						ModelBean element = (ModelBean) viewHolder.checkBoxFieldbookName.getTag();
 						element.setSelected(checkbox.isChecked());
 
-						// TODO: Put the logic here for the ActionBar
-						Toast.makeText(getApplicationContext(), String.valueOf(ModelBean.intOnCount) + "-checkbox-" + element.getFieldBookName(), Toast.LENGTH_SHORT).show();
+						// TODO: Put the logic here for the ActionMode
+						if (ModelBean.intOnCount == 0) {
+							FieldbookActivity.this.mMode.finish(); // Close the ActionBar
+							FieldbookActivity.this.isDisplayedActionMode = false;
+						} else if(!FieldbookActivity.this.isDisplayedActionMode) {
+							FieldbookActivity.this.mMode = startActionMode(new FieldbookActivityActionMode());
+							FieldbookActivity.this.isDisplayedActionMode = true; //raise the flag
+						}
+						
+						/*Toast.makeText(
+							getApplicationContext(),
+							String.valueOf(ModelBean.intOnCount) + "-checkbox-" + element.getFieldBookName(),
+							Toast.LENGTH_SHORT).show();*/
 					}
 				});
 
