@@ -11,7 +11,9 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 
 import android.app.Activity;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Debug;
 import android.os.Environment;
 import android.text.format.DateUtils;
 import android.view.LayoutInflater;
@@ -46,74 +48,20 @@ public class FieldbookActivity extends SherlockActivity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
+//		Debug.startMethodTracing("Fieldbook.trace");	
+		
 		setContentView(R.layout.study);	
 		listViewStudies = (ListView) findViewById(R.id.listViewStudies);
 
-		
-		//TODO: setting up the ArrayAdapter should be done in another thread or via 
-		//an asynchronous task because it could may require a long time to terminate
-		//worst-case.
-		
-		// -- Used in the arrayadapter
-		model = new ArrayList<ModelBean>();
-		
-		// Read the contents of the mount path
-		File folder = new File(MOUNT_SD_CARD + mntPath);	//point to the contents of the study files.
-		
-		// Check if the folder exists.
-		if (!folder.exists()) {
-			Toast.makeText(getApplicationContext(), MOUNT_SD_CARD + mntPath + " not found.", Toast.LENGTH_SHORT).show();
-		} else {
-			// Loop through all entries of the folder array and put each file into the ArrayList
-			String md5 = null;
-			for (final File fileEntry : folder.listFiles()) {
-				if (!fileEntry.isDirectory()) {
-					// Compute the md5 of the file to serve as version control
-					try {
-						FileInputStream fis = new FileInputStream(new File(MOUNT_SD_CARD + mntPath + "/" + fileEntry.getName()));
-						md5 = new String(Hex.encodeHex(DigestUtils.md5(fis)));	//will this cause memory leaks??
-					} catch (Exception e) {
-						md5 = "";
-					} 
-					
-					//add new list entry into the ArrayList<ModelBean>
-					model.add(new ModelBean(fileEntry.getName(),
-							DateUtils.getRelativeTimeSpanString(this.getApplicationContext(),
-									fileEntry.lastModified()).toString(), 
-							md5));
-				}
-			}
-			
-			//Sort the model
-			Collections.sort(model, new Comparator<ModelBean>() {
-				@Override
-				public int compare(ModelBean lhs, ModelBean rhs) {
-					return lhs.getFieldBookName().compareToIgnoreCase(rhs.getFieldBookName());
-				}
-			});
-			
-		}
+		// Prepare the ArrayAdapter here
+		new PrepareArrayAdapter().execute(MOUNT_SD_CARD + mntPath);
+	} //oncreate
 
-		// Instantiate a new ArrayAdapter.
-		ArrayAdapter<ModelBean> adapter = new MultiSelectAdapter(this, model);
-
-		// Associate the listview with an adapter
-		listViewStudies.setAdapter(adapter);
-		listViewStudies.setOnItemClickListener(new OnItemClickListener() {
-			@Override
-			public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
-				CheckBox checkbox = (CheckBox) view.findViewById(R.id.checkBoxFieldbook);
-				
-				ModelBean element = (ModelBean) checkbox.getTag();
-				Toast.makeText(getApplicationContext(), element.getFieldBookName() + "-voila!", Toast.LENGTH_SHORT).show();
-			}
-		});
-
-//		Log.d(TAG, "*****onCreate*****");
-		
+	@Override
+	protected void onStop() {
+		super.onStop();
+//		Debug.stopMethodTracing();
 	}
-
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -133,6 +81,95 @@ public class FieldbookActivity extends SherlockActivity {
 		Toast.makeText(getApplicationContext(), item.getTitle(), Toast.LENGTH_SHORT).show();
 		return true;
 	}
+
+	/**
+	 *  This will prepare the array adapter in the background and then associate it to the ListView.
+	 This ensures that the UI will not block when the number of files in the assigned directory
+	 for the fieldbook files is unusually large.
+	 The first parameter(of the generic class) is the input to the doInBackground function. The
+	 2nd parameter goes to the progress indicator, and the 3rd parameter goes to the result.
+	
+	 There is a very nice tutorial at [32:48] in 08_18 video by marakana. 
+	 The way to access resources in the Activity from this internal asynchronous task is by using a
+	 call similar to this:
+	 		FieldbookActivity.this.getString(R.string.theStringHere);
+	 * @author RAnacleto
+	 *
+	 */
+	private final class PrepareArrayAdapter extends AsyncTask<String, String, List<ModelBean>> {
+		
+		// This is called to do the work inside this separate thread.
+		@Override
+		protected List<ModelBean> doInBackground(String... pathToFieldbook) {
+			// Define the return object
+			List<ModelBean> model = new ArrayList<ModelBean>();
+			
+			// Read the contents of the mount path: i.e. "MOUNT_SD_CARD + mntPath"
+			File folder = new File(pathToFieldbook[0]);	// just get the first parameter in the input String array
+			
+			if (folder.exists()) {
+				// Loop through all entries of the folder array and put each file into the ArrayList
+				String md5 = null;
+				for (final File fileEntry : folder.listFiles()) {
+					if (!fileEntry.isDirectory()) {
+						// Compute the md5 of the file to serve as version control
+						try {
+							FileInputStream fis = new FileInputStream(new File(pathToFieldbook[0] + "/" + fileEntry.getName()));
+							md5 = new String(Hex.encodeHex(DigestUtils.md5(fis)));
+						} catch (Exception e) {
+							md5 = "";
+						} 
+						
+						//add new list entry into the ArrayList<ModelBean>
+						model.add(new ModelBean(fileEntry.getName(),
+							DateUtils.getRelativeTimeSpanString(FieldbookActivity.this.getApplicationContext(),
+								fileEntry.lastModified()).toString(), 
+								md5));
+					}
+				}
+				
+				//Sort the model
+				Collections.sort(model, new Comparator<ModelBean>() {
+					@Override
+					public int compare(ModelBean lhs, ModelBean rhs) {
+						return lhs.getFieldBookName().compareToIgnoreCase(rhs.getFieldBookName());
+					}
+				});
+			}
+			return model;
+		}
+
+		@Override
+		protected void onProgressUpdate(String... values) {
+			super.onProgressUpdate(values);
+		}
+
+		// This will be called when the thread is done with its work.
+		@Override
+		protected void onPostExecute(List<ModelBean> result) {
+			super.onPostExecute(result);
+
+			// Instantiate a new ArrayAdapter.
+			ArrayAdapter<ModelBean> adapter = new MultiSelectAdapter(FieldbookActivity.this, result);
+
+			// Associate the listview with an adapter
+			FieldbookActivity.this.listViewStudies.setAdapter(adapter);
+			FieldbookActivity.this.listViewStudies.setOnItemClickListener(new OnItemClickListener() {
+				@Override
+				public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
+					CheckBox checkbox = (CheckBox) view.findViewById(R.id.checkBoxFieldbook);
+					
+					ModelBean element = (ModelBean) checkbox.getTag();
+//					Toast.makeText(FieldbookActivity.this.getApplicationContext(), element.getFieldBookName() + "-voila!", Toast.LENGTH_SHORT).show();
+					// TODO: Create the logic here to open the file when it is clicked directly..
+				}
+			});
+			
+			Toast.makeText(FieldbookActivity.this.getApplicationContext(),
+					"AsyncTask done.", Toast.LENGTH_SHORT).show();
+		}		
+	} // end of the asynchronous task
+	
 	
 	private final class AnActionModeOfEpicProportions implements ActionMode.Callback {
         @Override
@@ -275,6 +312,8 @@ public class FieldbookActivity extends SherlockActivity {
 						CheckBox checkbox = (CheckBox) v.findViewById(R.id.checkBoxFieldbook);
 						ModelBean element = (ModelBean) viewHolder.checkBoxFieldbookName.getTag();
 						element.setSelected(checkbox.isChecked());
+
+						// TODO: Put the logic here for the ActionBar
 						Toast.makeText(getApplicationContext(), String.valueOf(ModelBean.intOnCount) + "-checkbox-" + element.getFieldBookName(), Toast.LENGTH_SHORT).show();
 					}
 				});
